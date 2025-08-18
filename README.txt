@@ -19,10 +19,4 @@ The package contains BasePaper,Document,PPT,ScreenShot,WebShot,Video and SourceC
 
 4.Execute it
 
--------------------------------------------------
 
-http://clickmyproject.com
-
--------------------------------------------------
-CONTACT NO: 9677748277
-            9677751577
