@@ -1,3 +1,5 @@
+
+import os
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -9,9 +11,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, TensorDataset
-import base64
-import os
 
+import base64
 
 def set_png_as_page_bg(png_file):
     """
@@ -28,9 +29,8 @@ def set_png_as_page_bg(png_file):
     }
     </style>
     ''' % bin_str
-
+    
     st.markdown(page_bg_img, unsafe_allow_html=True)
-
 
 def get_base64_of_bin_file(bin_file):
     """
@@ -40,13 +40,11 @@ def get_base64_of_bin_file(bin_file):
         data = f.read()
     return base64.b64encode(data).decode()
 
-
 # Load the dataset
 # @st.cache
 def load_data():
     df = pd.read_csv('Friday-WorkingHours-Morning.pcap_ISCX.csv')
     return df
-
 
 # Preprocess the data
 def preprocess_data(df):
@@ -81,7 +79,6 @@ def preprocess_data(df):
 
     return x_train_tensor, y_train_tensor, x_test_tensor, y_test_tensor
 
-
 # Define CNN model
 class CNN(nn.Module):
     def __init__(self):
@@ -104,6 +101,43 @@ class CNN(nn.Module):
         x = self.fc3(x)
         return x
 
+# Define LSTM model
+class LSTMModel(nn.Module):
+    def __init__(self, input_size, hidden_size, num_layers, num_classes):
+        super(LSTMModel, self).__init__()
+        self.hidden_size = hidden_size
+        self.num_layers = num_layers
+        self.lstm = nn.LSTM(input_size, hidden_size, num_layers, batch_first=True)
+        self.fc = nn.Linear(hidden_size, num_classes)
+
+    def forward(self, x):
+        h0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size).to(x.device)
+        c0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size).to(x.device)
+        out, _ = self.lstm(x, (h0, c0))
+        out = out[:, -1, :]
+        out = self.fc(out)
+        return out
+
+class CNN(nn.Module):
+    def __init__(self):
+        super(CNN, self).__init__()
+        self.conv1 = nn.Conv1d(in_channels=1, out_channels=16, kernel_size=3, stride=1, padding=1)
+        self.conv2 = nn.Conv1d(in_channels=16, out_channels=32, kernel_size=3, stride=1, padding=1)
+        self.pool = nn.MaxPool1d(kernel_size=2, stride=2, padding=0)
+        self.fc1 = None
+        self.fc2 = nn.Linear(128, 64)
+        self.fc3 = nn.Linear(64, 2)  # Adjust output classes as needed
+
+    def forward(self, x):
+        x = self.pool(F.relu(self.conv1(x)))
+        x = self.pool(F.relu(self.conv2(x)))
+        x = x.view(x.size(0), -1)  # Flatten the tensor
+        if self.fc1 is None:
+            self.fc1 = nn.Linear(x.size(1), 128).to(x.device)
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        x = self.fc3(x)
+        return x
 
 # Define LSTM model
 class LSTMModel(nn.Module):
@@ -178,7 +212,6 @@ def train_cnn(train_loader, test_loader, num_epochs=10):
 
     return model, train_losses, train_accuracies, val_accuracies
 
-
 # Function to train LSTM model
 def train_lstm(train_loader, test_loader, input_size, hidden_size=128, num_layers=2, num_epochs=10):
     model = LSTMModel(input_size, hidden_size, num_layers, 2)  # Adjust output classes as needed
@@ -233,7 +266,6 @@ def train_lstm(train_loader, test_loader, input_size, hidden_size=128, num_layer
         print(f"Epoch {epoch+1}/{num_epochs}, Loss: {epoch_loss:.4f}, Train Accuracy: {train_accuracy:.4f}, Val Accuracy: {val_accuracy:.4f}")
 
     return model, train_losses, train_accuracies, val_accuracies
-
 
 def train_proposed(train_loader, test_loader, num_epochs=10):
     model = CNN()
@@ -292,8 +324,7 @@ def train_proposed(train_loader, test_loader, num_epochs=10):
 
 # Main function to run Streamlit app
 def main():
-
-    import os
+    
     def get_image_path():
         return os.path.join(os.path.dirname(__file__), "images.jfif")
 
@@ -301,6 +332,7 @@ def main():
 
     st.title("DDoS_Attack_Detection_in_IoT_Networks")
     page = st.sidebar.selectbox("Select a page", ["Home", "CNN Model", "LSTM Model", "Proposed Model"])
+
 
     if page == "Home":
         st.header("Home Page")
@@ -310,10 +342,12 @@ def main():
     elif page == "CNN Model":
         st.header("Train CNN Model")
         st.write("Loading and preprocessing data...")
-
+        
         # Load data
         df = load_data()
         x_train_tensor, y_train_tensor, x_test_tensor, y_test_tensor = preprocess_data(df)
+        
+        # Create DataLoader
 
         # Create DataLoader
         train_dataset = TensorDataset(x_train_tensor, y_train_tensor)
@@ -392,14 +426,16 @@ def main():
         ax.set_title('Training and Validation Accuracy Over Epochs (LSTM Model)')
         ax.legend()
         st.pyplot(fig)
-
+        
     elif page == "Proposed Model":
         st.header("Train Proposed Model")
         st.write("Loading and preprocessing data...")
-
+        
         # Load data
         df = load_data()
         x_train_tensor, y_train_tensor, x_test_tensor, y_test_tensor = preprocess_data(df)
+        
+        # Create DataLoader
 
         # Create DataLoader
         train_dataset = TensorDataset(x_train_tensor, y_train_tensor)
