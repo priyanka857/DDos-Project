@@ -43,7 +43,7 @@ def get_base64_of_bin_file(bin_file):
 # Load the dataset
 # @st.cache
 def load_data():
-    df = pd.read_csv('SourceCode/Dataset/Friday-WorkingHours-Morning.pcap_ISCX.csv')
+    df = pd.read_csv('SourceCode/Dataset/ddoscsv.csv')
     return df
 
 # Preprocess the data
